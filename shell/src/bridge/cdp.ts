@@ -10,6 +10,7 @@ import {
   ISOLATED_WORLD,
   SCROLL_Y_SCRIPT,
   elementInfoScript,
+  findBySelectorScript,
   findByTextScript,
   focusSearchScript,
   scrollByScript,
@@ -128,6 +129,10 @@ export class CdpBridge {
 
   async similarLabels(query: string): Promise<string[]> {
     return (await this.readEval<string[]>(similarLabelsScript(query))) ?? [];
+  }
+
+  async findBySelector(css: string, expectedName = ''): Promise<{ id: string; name: string; score: number } | null> {
+    return this.readEval<{ id: string; name: string; score: number } | null>(findBySelectorScript(css, expectedName));
   }
 
   async scrollIntoView(elementId: string): Promise<boolean> {

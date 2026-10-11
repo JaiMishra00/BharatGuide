@@ -18,7 +18,7 @@ export async function buildRunContext(
   if (history.length) parts.push(`<history>\n${history.slice(-6).join('\n')}\n</history>`);
   parts.push(
     grantedTitle
-      ? `<mode>SEARCH COMMAND. You may type exactly "${grantedTitle}" once with type_in_search into the page's search box (navigate to https://www.youtube.com/ first if no search box is shown), then press_enter, then point at the best matching result and finish. Opening the result is left to the user.</mode>`
+      ? `<mode>YOUTUBE SEARCH COMMAND (findyt). If the active page is not www.youtube.com, navigate to https://www.youtube.com/ first. Then type exactly "${grantedTitle}" once with type_in_search into its search box, press_enter, point at the best matching result and finish. Opening the result is left to the user.</mode>`
       : `<mode>GUIDE. click allowed: ${ctx.userAskedClick}. scroll allowed: ${ctx.userAskedScroll}. typing: never.</mode>`,
   );
   return parts.join('\n');

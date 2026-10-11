@@ -20,7 +20,7 @@ export class GrantStore {
 
   check(taskId: string, text: string, now = Date.now()): { ok: true } | { ok: false; reason: string } {
     const grant = this.grant;
-    if (!grant) return { ok: false, reason: 'no typing grant: typing only happens for an explicit "search for <title>" command' };
+    if (!grant) return { ok: false, reason: 'no typing grant: typing only happens for an explicit "findyt <title>" YouTube search command' };
     if (grant.taskId !== taskId) return { ok: false, reason: 'the typing grant belongs to another task' };
     if (grant.usesLeft < 1) return { ok: false, reason: 'the typing grant was already used' };
     if (now >= grant.expiresAt) return { ok: false, reason: 'the typing grant expired' };

@@ -33,9 +33,10 @@ export async function runTool(
   if (!tool) return { error: `unknown tool "${name}"` };
 
   ctx.toolCalls += 1;
-  if (ctx.toolCalls > MAX_TOOL_CALLS) {
+  const cap = ctx.toolCap ?? MAX_TOOL_CALLS;
+  if (ctx.toolCalls > cap) {
     halt('tool_cap');
-    return { stop: true, error: `tool call cap (${MAX_TOOL_CALLS}) reached` };
+    return { stop: true, error: `tool call cap (${cap}) reached` };
   }
 
   const userAsked =

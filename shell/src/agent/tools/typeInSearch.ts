@@ -7,7 +7,7 @@ const schema = z.object({ text: z.string().min(1).max(120).describe('Exactly the
 export const typeInSearch: ToolDef<z.infer<typeof schema>> = {
   name: 'type_in_search',
   description:
-    "Type the user's granted title into the page's main search box, once. Only during a \"search for <title>\" command; any other text is refused.",
+    "Type the user's granted title into the page's main search box, once. Only during a \"findyt <title>\" YouTube search command; any other text is refused.",
   schema,
   async execute(input, ctx, host) {
     const grant = ctx.grants.check(ctx.taskId, input.text, host.now());

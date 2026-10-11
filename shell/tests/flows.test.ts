@@ -92,7 +92,7 @@ describe('agent flows', () => {
     expect(assistantText(events)).toBe('');
   });
 
-  it('Flow B: "search for <title>" -> grant, type once, Enter, grant dropped', async () => {
+  it('Flow B: "findyt <title>" -> grant, type once, Enter, grant dropped', async () => {
     const { host, browser, events } = makeHost();
     const { factory, results } = scripted([
       { tool: 'type_in_search', input: { text: 'Voter registration explained' } },
@@ -100,11 +100,11 @@ describe('agent flows', () => {
       { tool: 'finish', input: { message: 'Here are the results.' } },
     ]);
     const agent = new AgentCore(host, factory);
-    await agent.handleUserMessage('search for "Voter registration explained"');
+    await agent.handleUserMessage('findyt "Voter registration explained"');
     expect(results.map((r) => r.error)).toEqual([undefined, undefined, undefined]);
     expect(browser.typed).toEqual(['Voter registration explained']);
     expect(browser.actions).toContain('enter');
-    expect(assistantText(events)).toContain('Searching for: **Voter registration explained**');
+    expect(assistantText(events)).toContain('Searching YouTube for: **Voter registration explained**');
     expect(agent.grants.current).toBeNull();
   });
 });

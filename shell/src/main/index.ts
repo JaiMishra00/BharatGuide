@@ -17,6 +17,8 @@ import { RagClient } from '../rag/client';
 import { IPC, type ChatCommand, type ChatEvent, type GhostRect, type ToolbarCommand } from '../shared/ipc';
 import { loadConfig, loadEnvFiles } from './config';
 import { FileLogger } from './logger';
+import { loadRouteCatalogs } from './routeCatalog';
+import { routeHosts } from '../agent/routes';
 import { OverlayWindow } from './overlayWindow';
 import { PARTITION, TabManager } from './tabManager';
 import { computeLayout, createLocalView, createMainWindow } from './views';
@@ -63,6 +65,10 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 async function boot(): Promise<void> {
   const logger = new FileLogger(join(app.getPath('userData'), 'logs'), config.debugLog);
   logger.info('system', 'boot', { planner: config.plannerImpl, model: config.plannerModel, rag: config.ragUrl });
+
+  // Route catalogs ("guide me to <service>"): their official hosts join the allowlist.
+  const routes = loadRouteCatalogs(config.routeCatalogs, app.getAppPath(), logger);
+  config.allowedHosts = [...new Set([...config.allowedHosts, ...routeHosts(routes)])];
 
   // Remote pages: own partition, no permissions by default.
   session.fromPartition(PARTITION).setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
@@ -148,7 +154,7 @@ async function boot(): Promise<void> {
           logger,
         );
   };
-  agent = new AgentCore(host, makePlanner, config.searchCommandPhrases);
+  agent = new AgentCore(host, makePlanner, config.searchCommandPhrases, routes);
 
   wireIpc({ chatView, chatWindow, toolbarView, tabs, layout, logger, sendChat });
   tabs.onPageEvent((_id, event) => {

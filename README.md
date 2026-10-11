@@ -49,7 +49,8 @@ A small Electron browser with three parts working together:
 - Explain which form to use and what documents are needed, citing the official source.
 - Open the official portal (from an allowlist) and point at the next element to use.
 - Wait for the user to act, then guide the next step.
-- Run a user-requested search (`search for <title>`) in the page's search box.
+- Walk a recorded route to an official service (`guide me to <service>`, `find <service>` or `search for <service>`), for example the Parivahan (Sarathi/Vahan) services in `parivahan.UP.json`. The ghost points at each step and waits until you have done it.
+- Run a user-requested YouTube search (`findyt <title>`) in YouTube's search box.
 
 **What it will never do**
 
@@ -102,7 +103,7 @@ Two processes talk over local HTTP. The Electron **shell** holds the UI, the age
 
 1. The user types a message in the chat panel.
 2. **Redaction.** Aadhaar-like, EPIC-like, mobile and email patterns become `[REDACTED]` before display, logs, the planner or RAG ever see them.
-3. **Intent check in code.** A message such as `search for <title>` creates a single-use **TypingGrant**. Anything else is guidance. The planner can never create a grant.
+3. **Intent check in code.** Only `findyt <title>` creates a single-use **TypingGrant** (a YouTube search). Anything else is guidance. `guide me to X`, `find X` and `search for X` are handled in code first: a matching route from the route catalog is walked step by step, or X is pointed at on the current page. Only if neither fits does the planner run. The planner can never create a grant.
 4. The **planner** (Cline SDK `Agent`) receives the message plus a fresh context block (current page, open tabs, grant, short history) and may call only the registered tools.
 5. Every tool call goes through one guarded executor: state check, call caps, schema validation, then the tool's own guardrails.
 6. **`search_docs`** calls the RAG service. The reply comes back as `<source id="S1" …>` blocks that are treated as data, never as instructions.
@@ -150,12 +151,13 @@ Two processes talk over local HTTP. The Electron **shell** holds the UI, the age
 | --- | --- |
 | The user's real cursor and keyboard are never driven. Input goes through CDP inside the app, with no OS-level input and no remote-debugging port. | `shell/src/bridge/cdp.ts` |
 | The ghost is always visible during a task. A heartbeat pings the overlay every 2 s and the task halts if it stops answering. If the user simply switches to another app, the agent **pauses** rather than halts. | `overlayWindow.ts`, `guardrails.ts` |
-| Typing needs a single-use grant created only from the user's own `search for <title>` message. The text must equal the granted title, and the grant expires. | `intent.ts`, `typingGrant.ts` |
+| Typing needs a single-use grant created only from the user's own `findyt <title>` message. The text must equal the granted title, and the grant expires. | `intent.ts`, `typingGrant.ts` |
 | Every click is telegraphed: move, pulse, hint, then about 400 ms before the action. | `guardrails.ts` |
 | Esc pressed twice within 800 ms cancels the task and drops the grant. A Stop button does the same. | `core.ts` |
 | Hard caps: 14 planner iterations, 12 tool calls, 90 s run time, and a halt after 3 consecutive rejected calls. | `planner.ts`, `executor.ts` |
 | Sensitive fields (password, OTP, Aadhaar, EPIC, card, PIN) are refused for click and type; the agent points and asks the user to do it. | `shell/src/bridge/sensitive.ts` |
-| Navigation is https-only and limited to ECI, UIDAI, Google and YouTube hosts, plus hosts of source URLs returned in the current task. | `allowlist.ts` |
+| Navigation is https-only and limited to ECI, UIDAI, Google and YouTube hosts, the hosts used by the route catalog (`*.parivahan.gov.in`), plus hosts of source URLs returned in the current task. | `allowlist.ts`, `routes.ts` |
+| Catalog routes only point and wait: the agent opens the route's start page, then for every hover/click/select step it points and waits until the page shows the step was done. It never clicks, selects or types on the user's behalf, and gated services (login, captcha, mobile OTP) are left to the user. | `routeGuide.ts` |
 | Text that asks the user for personal identifiers is blocked before it is shown. | `guardrails.ts` |
 | Page content, tab titles and retrieved text are passed to the model as quoted data, and tag-like text inside them is escaped. | `searchDocs.ts`, `planner.ts` |
 | Renderers are sandboxed and context-isolated with their own minimal preload. Secrets live only in the main process and the RAG service. | `views.ts`, `config.ts` |
@@ -274,6 +276,8 @@ One `.env` at the repository root is read by both the shell and the RAG service.
 | `PLANNER` | `ollama` (local) or `hosted` |
 | `PLANNER_URL`, `PLANNER_MODEL`, `PLANNER_API_KEY` | Model endpoint, model name and key for `hosted` |
 | `ALLOWED_HOSTS` | Comma-separated hosts the agent may open |
+| `SEARCH_COMMAND_PHRASES` | Phrases that start a YouTube search (default `findyt`; `find` and `search for` are always guidance) |
+| `ROUTE_CATALOGS` | Comma-separated route catalog files for `guide me to <service>` (default `parivahan.UP.json`, relative to the repo root). Their hosts are added to the allowlist. |
 | `START_URL` | First page opened (default `https://voters.eci.gov.in/`) |
 | `HOTKEY` | Focus the chat input (default `Ctrl+Shift+Space`) |
 

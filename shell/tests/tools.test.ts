@@ -47,10 +47,17 @@ describe('typing refusal matrix', () => {
     expect((await runTool('press_enter', {}, makeCtx('RunningCommand'), host, halt)).error).toBeDefined();
     expect(browser.actions).not.toContain('enter');
   });
-  it('grants come only from the user message intent', () => {
-    expect(classifyIntent('search for "Lofi Beats" on YouTube', ['search for', 'find'])).toEqual({ kind: 'search_command', title: 'Lofi Beats' });
-    expect(classifyIntent('How do I register as a new voter?', ['search for', 'find']).kind).toBe('guidance');
-    expect(classifyIntent('find the register button', ['search for', 'find']).kind).toBe('guidance');
+  it('grants come only from the user message intent ("findyt")', () => {
+    expect(classifyIntent('findyt "Lofi Beats" on YouTube', ['findyt'])).toEqual({ kind: 'search_command', title: 'Lofi Beats' });
+    expect(classifyIntent('findyt lofi beats', ['findyt'])).toEqual({ kind: 'search_command', title: 'lofi beats' });
+    expect(classifyIntent('How do I register as a new voter?', ['findyt']).kind).toBe('guidance');
+    expect(classifyIntent('findyt the register button', ['findyt']).kind).toBe('guidance');
+  });
+  it('"find X" and "search for X" are ghost guidance, never a typing grant', () => {
+    expect(classifyIntent('find the register button', ['findyt'])).toMatchObject({ kind: 'guidance', locate: 'register' });
+    expect(classifyIntent('search for "Lofi Beats" on YouTube', ['findyt']).kind).toBe('guidance');
+    expect(classifyIntent('search for apply for learner licence', ['findyt'])).toMatchObject({ kind: 'guidance', locate: 'apply for learner licence' });
+    expect(classifyIntent('find out how to register', ['findyt'])).toEqual({ kind: 'guidance', userAskedClick: false, userAskedScroll: false });
   });
 });
 

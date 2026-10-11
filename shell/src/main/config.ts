@@ -18,6 +18,8 @@ export interface ShellConfig {
   plannerReasoning: string;
   hotkey: string;
   searchCommandPhrases: string[];
+  /** Route catalog files (JSON) for "guide me to <service>"; their hosts are allowlisted. */
+  routeCatalogs: string[];
   allowedHosts: string[];
   helplineFallback: string;
   startUrl: string;
@@ -37,12 +39,22 @@ export function loadDotEnv(file: string): void {
   }
 }
 
-function list(value: string | undefined, fallback: string[]): string[] {
+function list(value: string | undefined, fallback: string[], lower = true): string[] {
   if (!value || !value.trim()) return fallback;
   return value
     .split(',')
-    .map((item) => item.trim().toLowerCase())
+    .map((item) => (lower ? item.trim().toLowerCase() : item.trim()))
     .filter(Boolean);
+}
+
+/**
+ * "find X" / "search for X" are ghost-cursor guidance now; only "findyt X"
+ * types a YouTube search. Old .env files still list "search for,find", so
+ * those two phrases are dropped from SEARCH_COMMAND_PHRASES here.
+ */
+export function searchPhrasesFrom(value: string | undefined): string[] {
+  const phrases = list(value, ['findyt']).filter((p) => p !== 'find' && p !== 'search for' && p !== 'search');
+  return phrases.length ? phrases : ['findyt'];
 }
 
 export const DEFAULT_ALLOWED_HOSTS = [
@@ -71,7 +83,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ShellConfig {
     plannerProviderId: env.PLANNER_PROVIDER_ID ?? 'openai-compatible',
     plannerReasoning: env.PLANNER_REASONING ?? (planner === 'ollama' ? 'none' : ''),
     hotkey: env.HOTKEY ?? 'Ctrl+Shift+Space',
-    searchCommandPhrases: list(env.SEARCH_COMMAND_PHRASES, ['search for', 'find']),
+    searchCommandPhrases: searchPhrasesFrom(env.SEARCH_COMMAND_PHRASES),
+    routeCatalogs: list(env.ROUTE_CATALOGS, ['parivahan.UP.json'], false),
     allowedHosts: list(env.ALLOWED_HOSTS, DEFAULT_ALLOWED_HOSTS),
     helplineFallback: env.HELPLINE_FALLBACK ?? 'Voter Helpline 1950 | UIDAI 1947',
     startUrl: env.START_URL ?? 'https://voters.eci.gov.in/',

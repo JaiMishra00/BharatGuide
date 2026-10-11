@@ -148,6 +148,35 @@ export function findByTextScript(query: string): string {
   })()`;
 }
 
+/**
+ * The visible element matching a recorded CSS selector (catalog routes). When
+ * `expected` is given, the element's label must contain it (or be contained
+ * in it), so a stale selector that now hits a different element is ignored.
+ * Tags the element with a data-gg-id; read-only otherwise.
+ */
+export function findBySelectorScript(css: string, expected: string): string {
+  return `(() => {
+    ${SHARED_HELPERS}
+    const norm = (s) => clean(s).toLowerCase().replace(/[^a-z0-9\\u0900-\\u097f ]+/g, ' ').replace(/\\s+/g, ' ').trim();
+    let el = null;
+    try { el = document.querySelector(${JSON.stringify(css)}); } catch (e) { return null; }
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return null;
+    const st = getComputedStyle(el);
+    if (st.visibility === 'hidden' || st.display === 'none' || st.opacity === '0') return null;
+    const tag = el.tagName.toLowerCase();
+    const text = tag === 'select' ? '' : (el.innerText || el.textContent || '');
+    const name = clean(labelOf(el) || text || el.getAttribute('title') || el.getAttribute('placeholder') || '').slice(0, 160);
+    const want = norm(${JSON.stringify(expected)});
+    const have = norm(name);
+    if (want && !(have.includes(want) || (have.length >= 3 && want.includes(have)))) return null;
+    let id = el.getAttribute('data-gg-id');
+    if (!id) { window.__ggSeq = (window.__ggSeq || 0) + 1; id = 'e' + window.__ggSeq; el.setAttribute('data-gg-id', id); }
+    return { id, name, score: 100 };
+  })()`;
+}
+
 /** Up to 4 clickable labels sharing at least one word with `query` (for "did you mean"). */
 export function similarLabelsScript(query: string): string {
   return `(() => {

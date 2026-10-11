@@ -278,6 +278,15 @@ export class TabManager implements BrowserPort {
       return [];
     }
   }
+  async findBySelector(css: string, expectedName?: string): Promise<{ id: string; name: string; score: number } | null> {
+    if (!this.active) return null;
+    try {
+      return await this.active.bridge.findBySelector(css, expectedName ?? '');
+    } catch (error) {
+      this.logger.warn('tabs', 'findBySelector failed', { error: String(error) });
+      return null;
+    }
+  }
   async scrollIntoView(elementId: string): Promise<boolean> {
     if (!this.active) return false;
     try {

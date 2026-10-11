@@ -37,6 +37,12 @@ export interface BrowserPort {
   findByText(query: string): Promise<{ id: string; name: string; score: number } | null>;
   /** Clickable labels that share words with the query ("did you mean ..."). */
   similarLabels(query: string): Promise<string[]>;
+  /**
+   * Visible element matching a CSS selector (catalog routes), tagged with an id.
+   * With expectedName, the element's label must contain it, so a stale selector
+   * that now hits a different element is rejected.
+   */
+  findBySelector(css: string, expectedName?: string): Promise<{ id: string; name: string; score: number } | null>;
   focusSearch(elementId: string): Promise<boolean>;
   insertText(text: string): Promise<void>;
   searchValue(elementId: string): Promise<string | null>;
@@ -93,6 +99,8 @@ export interface TaskContext {
   corpusLastUpdated: string | null;
   searchCalls: number;
   toolCalls: number;
+  /** Per-task tool call cap; defaults to MAX_TOOL_CALLS. A catalog route raises it to fit its steps. */
+  toolCap?: number;
   consecutiveRejections: number;
   lastSuccessfulTool: ToolName | null;
   /** Set when the shell has taken over (abstain card, service down, finish, halt). */

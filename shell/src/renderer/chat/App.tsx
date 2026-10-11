@@ -131,7 +131,7 @@ export function App() {
           ref={inputRef}
           value={draft}
           rows={2}
-          placeholder={busy ? 'Press Esc twice to stop…' : 'Ask a question, or "search for <video title>"'}
+          placeholder={busy ? 'Press Esc twice to stop…' : 'Ask a question, "find <service>", or "findyt <video title>"'}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {

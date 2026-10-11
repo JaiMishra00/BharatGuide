@@ -50,7 +50,10 @@ export class FakeBrowser implements BrowserPort {
     return id;
   }
   switchTab(id: string) { this.actions.push(`switch:${id}`); this.active = id; }
-  async navigate(url: string) { this.actions.push(`navigate:${url}`); }
+  /** Test hooks: change the page when the agent navigates / when the user "acts". */
+  onNavigate?: (url: string) => void;
+  onWait?: (event: WaitEvent) => void;
+  async navigate(url: string) { this.actions.push(`navigate:${url}`); this.onNavigate?.(url); }
   animateUrl(url: string) { this.actions.push(`animate:${url}`); }
   async click(x: number, y: number) { this.actions.push(`click:${x},${y}`); }
   async wheel(_x: number, _y: number, dy: number) { this.actions.push(`wheel:${dy}`); }
@@ -87,7 +90,24 @@ export class FakeBrowser implements BrowserPort {
   async insertText(text: string) { this.typed.push(text); }
   async searchValue() { return this.typed.at(-1) ?? ''; }
   async pressEnter() { this.actions.push('enter'); }
-  async waitForEvent(_event: WaitEvent) { return this.nextEvent; }
+  /** Every waitForEvent call, in order (kept out of `actions`, which records page-changing actions). */
+  waits: WaitEvent[] = [];
+  async waitForEvent(event: WaitEvent) {
+    this.waits.push(event);
+    this.onWait?.(event);
+    return this.nextEvent;
+  }
+  /** CSS selector -> element id, for catalog route targets. Only elements in the snapshot or `hidden` are "visible". */
+  selectors = new Map<string, string>();
+  async findBySelector(css: string, expectedName?: string) {
+    const id = this.selectors.get(css);
+    const pool = [...(this.snap?.elements ?? []), ...this.hidden];
+    const hit = id ? pool.find((e) => e.id === id) : undefined;
+    if (!hit) return null;
+    if (expectedName && !hit.name.toLowerCase().includes(expectedName.toLowerCase())) return null;
+    if (this.snap && !this.snap.elements.includes(hit)) this.snap = { ...this.snap, elements: [...this.snap.elements, hit] };
+    return { id: hit.id, name: hit.name, score: 100 };
+  }
 }
 
 export class FakeGhost {

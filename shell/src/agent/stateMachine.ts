@@ -66,7 +66,7 @@ export class StateMachine {
     if (tool === 'type_in_search' || tool === 'press_enter') {
       return s === 'RunningCommand'
         ? { ok: true }
-        : { ok: false, reason: `${tool} is only allowed in RunningCommand (a "search for <title>" command); current state ${s}` };
+        : { ok: false, reason: `${tool} is only allowed in RunningCommand (a "findyt <title>" YouTube search command); current state ${s}` };
     }
     if ((tool === 'click' || tool === 'scroll') && s !== 'RunningCommand' && !userAskedAction) {
       return { ok: false, reason: `${tool} is only allowed when the user asked for it. Use point_at to show the user instead` };

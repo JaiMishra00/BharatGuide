@@ -14,7 +14,7 @@ const halt = (): void => undefined;
 
 describe('click on voter ID: tool guards', () => {
   it('"click on voter id" is guidance with click permission, never a typing grant', () => {
-    expect(classifyIntent('click on voter id', ['search for', 'find'])).toEqual({ kind: 'guidance', userAskedClick: true, userAskedScroll: false });
+    expect(classifyIntent('click on voter id', ['findyt'])).toEqual({ kind: 'guidance', userAskedClick: true, userAskedScroll: false });
   });
 
   it('Voter ID / EPIC number inputs are detected as sensitive', () => {

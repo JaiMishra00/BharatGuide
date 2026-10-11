@@ -7,18 +7,28 @@ export type Intent =
   | { kind: 'guidance'; userAskedClick: boolean; userAskedScroll: boolean; locate?: string };
 
 /**
+ * Phrases that start a YouTube search command (the only typing the agent ever
+ * does). "find X" / "search for X" are NOT search commands: they are ghost
+ * cursor guidance (see locateTarget).
+ */
+export const DEFAULT_SEARCH_PHRASES = ['findyt'];
+
+/**
  * "guide me to the submit appeal option", "where is Fill Form 6", "show me the
- * login button" -> "submit appeal". A pure where-is-it request about the page,
- * answered in code by finding the label and pointing (no model needed).
+ * login button", "find Apply for Learner Licence", "search for track appeal"
+ * -> the target label/service. A where-is-it request answered in code: a route
+ * from the catalog, or the label on the page (no model needed).
  */
 export function locateTarget(message: string): string | null {
   const text = message.trim().replace(/[?.!]+$/, '');
   const m =
-    /^(?:please\s+|can you\s+|could you\s+)?(?:guide me to|take me to|point me to|point to|point at|show me|navigate me to|lead me to|help me find|where is|where's|where do i find|how do i get to)\s+(.+)$/i.exec(text);
+    /^(?:please\s+|can you\s+|could you\s+)?(?:guide me to|guide me through|take me to|take me through|walk me through|navigate me to|navigate me through|navigate through|navigate to|go to|open|point me to|point to|point at|show me|lead me to|help me find|where is|where's|where do i find|how do i get to|search for|search|find|look for|locate)\s+(.+)$/i.exec(text);
   if (!m) return null;
+  // "find out how to ..." is a question, not a where-is-it request.
+  if (/^out\b/i.test(m[1])) return null;
   const target = m[1]
     .replace(/^(?:the|a|an)\s+/i, '')
-    .replace(/\s+(?:option|button|link|tab|section|menu|page|on this page|here)$/i, '')
+    .replace(/\s+(?:option|button|link|tab|section|menu|page|on this page|here|website|web site|site|portal|homepage|home page)$/i, '')
     .replace(/["“”'‘’]/g, '')
     .trim();
   return target.length >= 3 && target.length <= 80 ? target : null;
@@ -30,7 +40,7 @@ function escape(text: string): string {
 
 export function classifyIntent(message: string, phrases: string[]): Intent {
   const text = message.trim();
-  const alternatives = phrases.map(escape).join('|') || 'search for|find';
+  const alternatives = phrases.map(escape).join('|') || DEFAULT_SEARCH_PHRASES.map(escape).join('|');
   const match = new RegExp(`^(?:please\\s+)?(?:${alternatives})\\s+(.+)$`, 'i').exec(text);
   if (match) {
     let title = match[1].trim();
